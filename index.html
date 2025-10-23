@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2-Person Chat</title>
+    <!-- 1. Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 2. Firebase SDKs (v11.6.1) -->
+    <script type="module" src="https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js"></script>
+    <!-- Removed Firebase Auth as it's not strictly needed and causing errors -->
+    <!-- <script type="module" src="https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js"></script> -->
+    <script type="module" src="https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js"></script>
+    <script type="module" src="https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js"></script>
+    <script type="module" src="https://www.gstatic.com/firebasejs/11.6.1/firebase-analytics.js"></script>
+
+    <!-- Custom Styles -->
+    <style>
+        /* Inter font */
+        body {
+            font-family: 'Inter', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+        /* Hide scrollbar for chat messages */
+        #chat-messages::-webkit-scrollbar {
+            display: none;
+        }
+        #chat-messages {
+            -ms-overflow-style: none; /* IE and Edge */
+            scrollbar-width: none; /* Firefox */
+        }
+        
+        /* Hide file input */
+        .hidden-file-input {
+            width: 0.1px;
+            height: 0.1px;
+            opacity: 0;
+            overflow: hidden;
+            position: absolute;
+            z-index: -1;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white">
+
+    <!-- 
+      Login Screen
+      This is shown by default and hidden after successful login.
+    -->
+    <div id="login-screen" class="flex items-center justify-center h-screen w-screen p-4">
+        <div class="bg-white text-gray-900 p-8 rounded-2xl shadow-2xl w-full max-w-sm">
+            <h1 class="text-3xl font-bold text-center mb-6">Chat Login</h1>
+            <p class="text-center text-gray-600 mb-4">Enter your 6-digit PIN to continue.</p>
+            
+            <!-- Login Form -->
+            <form id="login-form">
+                <div class="mb-4">
+                    <label for="pin-input" class="sr-only">6-Digit PIN</label>
+                    <input type="password" id="pin-input"
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg text-lg text-center tracking-[0.3em] focus:outline-none focus:ring-2 focus:ring-blue-500"
+                           maxlength="6"
+                           placeholder="••••••"
+                           autocomplete="off">
+                </div>
+                <button type="submit"
+                        class="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-semibold text-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors duration-200">
+                    Login
+                </button>
+            </form>
+            
+            <!-- Error Message Area -->
+            <p id="login-error" class="text-red-600 text-center mt-4 h-5"></p>
+        </div>
+    </div>
+
+    <!-- 
+      Chat Screen
+      This is hidden by default and shown after successful login.
+    -->
+    <div id="chat-screen" class="h-screen w-screen flex-col hidden">
+        <!-- Chat Header -->
+        <header class="bg-gray-800 p-4 flex justify-between items-center shadow-md">
+            <h2 id="user-display-name" class="text-xl font-semibold"></h2>
+            <div class="flex items-center space-x-2">
+                 <!-- Clear Chat Button -->
+                <button id="clear-chat-button" title="Clear All Chat History" class="p-2 rounded-full hover:bg-gray-700 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                </button>
+                <!-- Logout Button -->
+                <button id="logout-button" title="Logout" class="p-2 rounded-full hover:bg-gray-700 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                    </svg>
+                </button>
+            </div>
+        </header>
+
+        <!-- Chat Messages Area -->
+        <main id="chat-messages" class="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-900"></main>
+
+        <!-- Loading Indicator for file upload -->
+        <div id="upload-indicator" class="hidden px-4 pb-2 text-sm text-gray-400">
+            <i>Uploading file...</i>
+        </div>
+
+        <!-- Chat Input Area -->
+        <footer class="bg-gray-800 p-4">
+            <form id="message-form" class="flex items-center space-x-3">
+                <!-- Attachment Button -->
+                <label for="file-input" class="p-3 rounded-full hover:bg-gray-700 transition-colors cursor-pointer">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                    </svg>
+                </label>
+                <input type="file" id="file-input" class="hidden-file-input">
+
+                <!-- Text Input -->
+                <input type="text" id="message-input"
+                       class="flex-1 bg-gray-700 border border-gray-600 rounded-full py-3 px-5 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                       placeholder="Type a message..." autocomplete="off">
+                
+                <!-- Send Button -->
+                <button type="submit" class="bg-blue-600 text-white rounded-full p-3 flex-shrink-0 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                    </svg>
+                </button>
+            </form>
+        </footer>
+    </div>
+
+    <!-- 
+      Custom Confirmation Modal (for Clear Chat)
+    -->
+    <div id="confirmation-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-white text-gray-900 rounded-lg shadow-xl p-6 w-full max-w-sm">
+            <h3 class="text-xl font-semibold mb-4">Confirm Action</h3>
+            <p id="modal-message" class="text-gray-700 mb-6">Are you sure?</p>
+            <div class="flex justify-end space-x-3">
+                <button id="modal-cancel-button" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors">
+                    Cancel
+                </button>
+                <button id="modal-confirm-button" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
+                    Confirm
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 
+      JavaScript Logic
+    -->
+        <script type="module">
+        // Import Firebase modules
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        // Removed Auth imports as they caused the error and are not required for this app's logic
+        /*
+        import { 
+            getAuth, 
+            signInAnonymously, 
+            signInWithCustomToken, 
+            onAuthStateChanged 
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        */
+        import { 
+            getFirestore, 
+            collection, 
+            doc, 
+            addDoc, 
+            getDocs, 
+            deleteDoc, 
+            query, 
+            onSnapshot, 
+            serverTimestamp,
+            setLogLevel
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { 
+            getStorage, 
+            ref, 
+            uploadBytesResumable, 
+            getDownloadURL 
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
+
+        // --- Firebase Config ---
+        // !! THIS CONTAINS YOUR PRIVATE KEYS !!
+        let firebaseConfig;
+        let configIsValid = false; // Flag to check if config is valid
+        try {
+             // This config is now implemented as requested.
+             firebaseConfig = {
+                apiKey: "AIzaSyBayS0D9xJZNstCf1D2Wk3aYt2Xll4RoY4",
+                authDomain: "law-dhartee.firebaseapp.com",
+                projectId: "law-dhartee",
+                storageBucket: "law-dhartee.firebasestorage.app",
+                messagingSenderId: "667742651569",
+                appId: "1:667742651569:web:72eea345d97974acc60e90",
+                measurementId: "G-EC6BD85GSX"
+             };
+
+             // This logic checks if the config is valid (not default)
+             if (!firebaseConfig.apiKey || firebaseConfig.apiKey.startsWith("AIzaSyB") === false) {
+                throw new Error("Firebase config is invalid.");
+             }
+             configIsValid = true; // Config is valid, set flag to true
+    } catch (e) {
+        console.error("Failed to parse Firebase config:", e);
+        document.body.innerHTML = `<div class="text-white p-8"><strong>Error:</strong> Firebase configuration is missing or invalid. Please follow the setup steps.</div>`;
+        // configIsValid remains false
+    }
+
+    // --- Run app logic only if config is valid ---
+    if (configIsValid) {
+        // --- App Config (FIXED) ---
+        const USER_PINS = {
+            '604505': { id: 'user1', name: 'Logged In User 1 d' },
+            '811889': { id: 'user2', name: 'Logged In User 2 m' }
+        };
+
+        // --- Global Variables ---
+        let app, db, storage; // Removed 'auth'
+        // let currentUserId = null; // Removed 'currentUserId'
+        let currentChatUser = null; // 'user1' or 'user2'
+        let currentChatUserName = null; // Display name
+        let unsubscribeFromChat = null; // Function to stop listening to chat
+        let chatCollectionRef;
+        let storageRefBase;
+
+        // --- DOM Elements ---
+        const loginScreen = document.getElementById('login-screen');
+        const chatScreen = document.getElementById('chat-screen');
+        const loginForm = document.getElementById('login-form');
+        const pinInput = document.getElementById('pin-input');
+        const loginError = document.getElementById('login-error');
+        const userDisplayName = document.getElementById('user-display-name');
+        const logoutButton = document.getElementById('logout-button');
+        const chatMessages = document.getElementById('chat-messages');
+        const messageForm = document.getElementById('message-form');
+        const messageInput = document.getElementById('message-input');
+        const fileInput = document.getElementById('file-input');
+        const uploadIndicator = document.getElementById('upload-indicator');
+        const clearChatButton = document.getElementById('clear-chat-button');
+        const modal = document.getElementById('confirmation-modal');
+        const modalMessage = document.getElementById('modal-message');
+        const modalCancelButton = document.getElementById('modal-cancel-button');
+        const modalConfirmButton = document.getElementById('modal-confirm-button');
+
+        // --- Initialization ---
+        async function initializeFirebase() {
+            try {
+                // Get App ID
+                const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-chat-app';
+
+                app = initializeApp(firebaseConfig);
+                // auth = getAuth(app); // Removed
+                db = getFirestore(app);
+                storage = getStorage(app);
+                setLogLevel('Debug'); // Enable Firebase logging
+
+                // Define collection paths based on App ID
+                const chatCollectionPath = `/artifacts/${appId}/public/data/chat-project`;
+                chatCollectionRef = collection(db, chatCollectionPath);
+                storageRefBase = `/artifacts/${appId}/public/attachments`;
+
+                // Sign in - Removed call to authenticateUser()
+                // await authenticateUser();
+                console.log("Firebase initialized (without auth).");
+                
+            } catch (error) {
+                console.error("Firebase Initialization Error:", error);
+                loginError.textContent = "Error connecting to service.";
+            }
+        }
+
+        // --- Removed authenticateUser function ---
+        /*
+        async function authenticateUser() {
+            onAuthStateChanged(auth, (user) => {
+                if (user) {
+                    console.log("Firebase user authenticated:", user.uid);
+                    currentUserId = user.uid;
+                } else {
+                    console.log("No Firebase user. App may not function correctly.");
+                    currentUserId = null;
+                }
+            });
+
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+            } catch (error) {
+                console.error("Firebase Auth Error:", error);
+                loginError.textContent = "Authentication failed.";
+            }
+        }
+        */
+
+        // --- Login / Logout Logic ---
+        function handleLogin(event) {
+            event.preventDefault();
+            const pin = pinInput.value;
+            const user = USER_PINS[pin];
+
+            if (user) {
+                currentChatUser = user.id;
+                currentChatUserName = user.name;
+                loginError.textContent = '';
+                pinInput.value = '';
+                showChatScreen();
+            } else {
+                loginError.textContent = 'Invalid PIN. Please try again.';
+            }
+        }
+
+        function handleLogout() {
+            currentChatUser = null;
+            currentChatUserName = null;
+
+            // Stop listening to chat updates
+            if (unsubscribeFromChat) {
+                unsubscribeFromChat();
+                unsubscribeFromChat = null;
+            }
+
+            // Remove unload/offline listeners
+            window.removeEventListener('beforeunload', handleLogout);
+            window.removeEventListener('offline', handleLogout);
+
+            // Show login screen
+            chatScreen.classList.add('hidden');
+            chatScreen.classList.remove('flex');
+            loginScreen.classList.remove('hidden');
+            loginScreen.classList.add('flex');
+            
+            console.log("User logged out.");
+        }
+
+        function showChatScreen() {
+            loginScreen.classList.add('hidden');
+            loginScreen.classList.remove('flex');
+            chatScreen.classList.remove('hidden');
+            chatScreen.classList.add('flex');
+            userDisplayName.textContent = currentChatUserName;
+
+            // Start listening for messages
+            loadChatMessages();
+
+            // Add listeners for immediate logout
+            window.addEventListener('beforeunload', handleLogout);
+            window.addEventListener('offline', handleLogout);
+        }
+
+        // --- Chat & Message Logic ---
+        function loadChatMessages() {
+            const q = query(chatCollectionRef);
+            
+            unsubscribeFromChat = onSnapshot(q, (querySnapshot) => {
+                let messages = [];
+                querySnapshot.forEach((doc) => {
+                    messages.push(doc.data());
+                });
+
+                // Sort messages by timestamp in JavaScript
+                messages.sort((a, b) => {
+                    const tsA = a.timestamp ? a.timestamp.toMillis() : 0;
+                    const tsB = b.timestamp ? b.timestamp.toMillis() : 0;
+                    return tsA - tsB;
+                });
+
+                displayMessages(messages);
+            }, (error) => {
+                console.error("Error loading chat messages: ", error);
+            });
+        }
+
+        function displayMessages(messages) {
+            chatMessages.innerHTML = ''; // Clear existing messages
+            messages.forEach(msg => {
+                const isSender = msg.sender === currentChatUser;
+                const messageWrapper = document.createElement('div');
+                messageWrapper.className = `flex ${isSender ? 'justify-end' : 'justify-start'}`;
+
+                const messageBubble = document.createElement('div');
+                // Removed shadow, adjusted padding for images
+                messageBubble.className = `p-3 rounded-2xl max-w-xs md:max-w-md ${isSender ? 'bg-blue-600 text-white rounded-br-none' : 'bg-gray-700 text-white rounded-bl-none'}`;
+                
+                // Add sender name (for the *other* user)
+                if (!isSender) {
+                    const senderName = document.createElement('div');
+                    senderName.className = 'text-xs font-semibold text-gray-400 mb-1';
+                    senderName.textContent = msg.displayName || 'User';
+                    messageBubble.appendChild(senderName);
+                }
+
+                // Add content (text or file link)
+                if (msg.type === 'file' && msg.contentUrl) {
+                    
+                    // FIX 2: Check if it's an image
+                    if (msg.mimeType && msg.mimeType.startsWith('image/')) {
+                        // It's an image, create an <img> tag
+                        const img = document.createElement('img');
+                        img.src = msg.contentUrl;
+                        img.alt = msg.fileName || 'Uploaded Image';
+                        // Make image clickable to open in new tab
+                        img.className = 'max-w-xs rounded-lg mt-1 cursor-pointer'; 
+                        img.onclick = () => window.open(msg.contentUrl, '_blank');
+                        
+                        messageBubble.appendChild(img);
+                        // Make bubble padding fit image
+                        messageBubble.classList.remove('p-3');
+                        messageBubble.classList.add('p-1'); 
+
+                    } else {
+                        // It's a different file type, show a link
+                        const fileLink = document.createElement('a');
+                        fileLink.href = msg.contentUrl;
+                        fileLink.target = '_blank';
+                        fileLink.rel = 'noopener noreferrer';
+                        fileLink.className = 'flex items-center space-x-2 underline text-blue-200 hover:text-blue-100';
+                        
+                        const fileIcon = `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>`;
+                        fileLink.innerHTML = `${fileIcon} <span>${msg.fileName || 'Attachment'}</span>`;
+                        messageBubble.appendChild(fileLink);
+                    }
+
+                } else if (msg.content) { // Check if msg.content is not null/undefined
+                    const messageText = document.createElement('p');
+                    messageText.textContent = msg.content;
+                    messageBubble.appendChild(messageText);
+                }
+                
+                // Add timestamp
+                if (msg.timestamp) {
+                     const timestamp = document.createElement('div');
+                     timestamp.className = `text-xs mt-1 ${isSender ? 'text-blue-200' : 'text-gray-400'} ${isSender ? 'text-right' : 'text-left'}`;
+                     timestamp.textContent = new Date(msg.timestamp.toMillis()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                     messageBubble.appendChild(timestamp);
+                }
+                
+                messageWrapper.appendChild(messageBubble);
+                chatMessages.appendChild(messageWrapper);
+            });
+
+            // Scroll to bottom
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        async function handleSendMessage(event) {
+            event.preventDefault();
+            const text = messageInput.value.trim();
+            const file = fileInput.files[0];
+
+            if (file) {
+                await uploadFile(file);
+                // FIX 1: Do not send text if a file is being sent
+            } else if (text) { // <-- Changed to 'else if'
+                await sendMessage(text, 'text');
+            }
+
+            messageForm.reset(); // Clears both text and file input
+            messageInput.disabled = false; // Re-enable text input
+        }
+
+        async function sendMessage(content, type, fileName = null, contentUrl = null, mimeType = null) { // Added mimeType
+            if (!currentChatUser) return;
+            try {
+                await addDoc(chatCollectionRef, {
+                    sender: currentChatUser,
+                    displayName: currentChatUserName,
+                    type: type, // 'text' or 'file'
+                    content: (type === 'text' ? content : null),
+                    contentUrl: (type === 'file' ? contentUrl : null),
+                    fileName: fileName,
+                    mimeType: mimeType, // FIX 2: Save the file's MIME type
+                    timestamp: serverTimestamp()
+                });
+            } catch (error) {
+                console.error("Error sending message: ", error);
+            }
+        }
+
+        async function uploadFile(file) {
+            if (!file) return;
+
+            uploadIndicator.classList.remove('hidden');
+            const uniqueFileName = `${new Date().getTime()}_${file.name}`;
+            const fileStorageRef = ref(storage, `${storageRefBase}/${uniqueFileName}`);
+            
+            // FIX 2: Add metadata (like MIME type) to the upload
+            const metadata = {
+              contentType: file.type || 'application/octet-stream'
+            };
+
+            const uploadTask = uploadBytesResumable(fileStorageRef, file, metadata); // Pass metadata
+
+            uploadTask.on('state_changed', 
+                (snapshot) => {
+                    // Can add progress bar here if needed
+                }, 
+                (error) => {
+                    console.error("Upload failed: ", error);
+                    uploadIndicator.classList.add('hidden');
+                    // Use custom modal/alert here
+                    loginError.textContent = "File upload failed."; // Re-use login error display
+                }, 
+                async () => {
+                    // Handle successful uploads on complete
+                    const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+                    // FIX 2: Pass the file type when sending the message
+                    await sendMessage(null, 'file', file.name, downloadURL, file.type || 'application/octet-stream');
+                    uploadIndicator.classList.add('hidden');
+                }
+            );
+        }
+
+        // --- Clear Chat Logic ---
+        async function clearAllChatMessages() {
+            console.log("Clearing all chat messages...");
+            try {
+                const querySnapshot = await getDocs(chatCollectionRef);
+                const deletePromises = [];
+                querySnapshot.forEach((doc) => {
+                    deletePromises.push(deleteDoc(doc.ref));
+                });
+                await Promise.all(deletePromises);
+                console.log("Chat history cleared.");
+            } catch (error) {
+                console.error("Error clearing chat: ", error);
+            }
+        }
+
+        // --- Modal Logic ---
+        let confirmCallback = null;
+        function showConfirmationModal(message, onConfirm) {
+            modalMessage.textContent = message;
+            confirmCallback = onConfirm;
+            modal.classList.remove('hidden');
+        }
+
+        function hideModal() {
+            modal.classList.add('hidden');
+            confirmCallback = null;
+        }
+
+        modalCancelButton.addEventListener('click', hideModal);
+        modalConfirmButton.addEventListener('click', () => {
+            if (confirmCallback) {
+                confirmCallback();
+            }
+            hideModal();
+        });
+
+        clearChatButton.addEventListener('click', () => {
+            showConfirmationModal(
+                "Are you sure you want to permanently delete all messages for *everyone*? This cannot be undone.",
+                clearAllChatMessages // Pass the function reference
+            );
+        });
+
+        // --- Event Listeners ---
+        loginForm.addEventListener('submit', handleLogin);
+        logoutButton.addEventListener('click', handleLogout);
+        messageForm.addEventListener('submit', handleSendMessage);
+        
+        // Handle file selection display
+        fileInput.addEventListener('change', () => {
+             if (fileInput.files.length > 0) {
+                 messageInput.value = `File: ${fileInput.files[0].name}`;
+                 messageInput.disabled = true;
+             }
+        });
+        // Clear file input if user clicks on text input
+        messageInput.addEventListener('click', () => {
+            if (fileInput.files.length > 0) {
+                fileInput.value = '';
+                messageInput.value = '';
+                messageInput.disabled = false;
+            }
+        });
+
+
+        // --- Start App ---
+        initializeFirebase();
+    }
+    </script>
+</body>
+</html>
