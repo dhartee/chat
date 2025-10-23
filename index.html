@@ -49,8 +49,9 @@
   FIX: 
   - Kept h-dvh (dynamic viewport height) for keyboard.
   - Added w-full to ensure body doesn't overflow the html tag.
+  - ADDED overflow-x-hidden to the body as well for extra safety.
 -->
-<body class="bg-gray-100 text-gray-900 h-dvh flex flex-col w-full">
+<body class="bg-gray-100 text-gray-900 h-dvh flex flex-col w-full overflow-x-hidden">
 
     <!-- 
       Login Screen
@@ -91,7 +92,8 @@
     <div id="chat-screen" class="h-full w-full flex-col hidden">
         <!-- Chat Header (No change) -->
         <header class="bg-white p-4 flex justify-between items-center shadow-md">
-            <h2 id="user-display-name" class="text-xl font-semibold"></h2>
+            <!-- FIX: Added truncate to prevent long names from breaking layout -->
+            <h2 id="user-display-name" class="text-xl font-semibold truncate"></h2>
             <div class="flex items-center space-x-2">
                  <!-- Clear Chat Button -->
                 <button id="clear-chat-button" title="Clear All Chat History" class="p-2 rounded-full hover:bg-gray-200 transition-colors">
@@ -695,3 +697,5 @@
     </script>
 </body>
 </html>
+
+
