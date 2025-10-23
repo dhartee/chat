@@ -3,7 +3,13 @@
 <html lang="en" class="h-full overflow-x-hidden">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- 
+      FIX: This is the critical change for Android WebView.
+      - maximum-scale=1.0: Prevents zooming in.
+      - user-scalable=no: Disables pinch-to-zoom.
+      This will lock the app to the screen and fix the layout.
+    -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>2-Person Chat</title>
     <!-- 1. Tailwind CSS for styling -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -697,5 +703,6 @@
     </script>
 </body>
 </html>
+
 
 
