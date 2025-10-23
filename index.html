@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Test Copy Upload</title>
+    <title>2-Person Chat</title>
     <!-- 1. Tailwind CSS for styling -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- 2. Firebase SDKs (v11.6.1) -->
+    <!-- RE-ADDED AUTH - THIS IS REQUIRED FOR SECURITY AND PERMISSIONS -->
     <script type="module" src="https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js"></script>
-    <!-- Removed Firebase Auth as it's not strictly needed and causing errors -->
-    <!-- <script type="module" src="https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js"></script> -->
+    <script type="module" src="https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js"></script>
     <script type="module" src="https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js"></script>
     <script type="module" src="https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js"></script>
     <script type="module" src="https://www.gstatic.com/firebasejs/11.6.1/firebase-analytics.js"></script>
@@ -44,16 +44,17 @@
         }
     </style>
 </head>
-<body class="bg-gray-100 text-gray-900">
+<!-- BODY IS NOW A FLEX CONTAINER TO FIX MOBILE LAYOUT -->
+<body class="bg-gray-100 text-gray-900 h-dvh flex flex-col">
 
     <!-- 
       Login Screen
-      This is shown by default and hidden after successful login.
+      FIX: Changed w-screen to w-full. Removed p-4 for better embedding.
     -->
-    <div id="login-screen" class="flex items-center justify-center h-dvh w-screen p-4">
+    <div id="login-screen" class="flex items-center justify-center h-full w-full">
         <div class="bg-white text-gray-900 p-8 rounded-2xl shadow-2xl w-full max-w-sm">
-            <h1 class="text-3xl font-bold text-center mb-6">Test Copy Login</h1>
-            <p class="text-center text-gray-600 mb-4">Enter your 4-digit PIN to continue.</p>
+            <h1 class="text-3xl font-bold text-center mb-6">Chat Login</h1>
+            <p class="text-center text-gray-600 mb-4">Enter your 6-digit PIN to continue.</p>
             
             <!-- Login Form -->
             <form id="login-form">
@@ -61,7 +62,7 @@
                     <label for="pin-input" class="sr-only">6-Digit PIN</label>
                     <input type="password" id="pin-input"
                            class="w-full px-4 py-3 border border-gray-300 rounded-lg text-lg text-center tracking-[0.3em] focus:outline-none focus:ring-2 focus:ring-blue-500"
-                           maxlength="10"
+                           maxlength="6"
                            placeholder="••••••"
                            autocomplete="off">
                 </div>
@@ -78,10 +79,11 @@
 
     <!-- 
       Chat Screen
-      This is hidden by default and shown after successful login.
+      FIX: Changed h-dvh/w-screen to h-full/w-full to fit parent (body).
+      Added flex flex-col to make children (header, main, footer) layout properly.
     -->
-    <div id="chat-screen" class="h-dvh w-screen flex-col hidden">
-        <!-- Chat Header -->
+    <div id="chat-screen" class="h-full w-full flex-col hidden">
+        <!-- Chat Header (No change) -->
         <header class="bg-white p-4 flex justify-between items-center shadow-md">
             <h2 id="user-display-name" class="text-xl font-semibold"></h2>
             <div class="flex items-center space-x-2">
@@ -100,18 +102,26 @@
             </div>
         </header>
 
-        <!-- Chat Messages Area -->
-        <main id="chat-messages" class="flex-1 overflow-y-auto p-4 space-y-4 bg-white"></main>
+        <!-- 
+          Chat Messages Area
+          FIX: Added flex-1 (to grow) and min-h-0 (to shrink). This is the key
+          fix for allowing the keyboard to appear without hiding the input.
+        -->
+        <main id="chat-messages" class="flex-1 min-h-0 overflow-y-auto p-4 space-y-4 bg-white"></main>
 
-        <!-- Loading Indicator for file upload -->
+        <!-- Loading Indicator (No change) -->
         <div id="upload-indicator" class="hidden px-4 pb-2 text-sm text-gray-600">
             <i>Uploading file...</i>
         </div>
 
-        <!-- Chat Input Area -->
-        <footer class="bg-gray-100 px-3 py-2 border-t border-gray-200">
+        <!-- 
+          Chat Input Area
+          FIX: Added flex-shrink-0 to prevent this footer from being
+          squished by the main content area.
+        -->
+        <footer class="bg-gray-100 px-3 py-2 border-t border-gray-200 flex-shrink-0">
             <form id="message-form" class="flex items-center space-x-2">
-                <!-- Attachment Button -->
+                <!-- Attachment Button (No change) -->
                 <label for="file-input" class="p-2 rounded-full hover:bg-gray-200 transition-colors cursor-pointer">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
@@ -119,12 +129,12 @@
                 </label>
                 <input type="file" id="file-input" class="hidden-file-input">
 
-                <!-- Text Input -->
+                <!-- Text Input (No change) -->
                 <input type="text" id="message-input"
                        class="flex-1 bg-white border border-gray-300 rounded-full py-2 px-4 text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
                        placeholder="Type a message..." autocomplete="off">
                 
-                <!-- Send Button -->
+                <!-- Send Button (No change, flex layout will handle it now) -->
                 <button type="submit" class="bg-blue-600 text-white rounded-full p-2 flex-shrink-0 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
@@ -135,7 +145,7 @@
     </div>
 
     <!-- 
-      Custom Confirmation Modal (for Clear Chat)
+      Custom Confirmation Modal (No change)
     -->
     <div id="confirmation-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50 hidden">
         <div class="bg-white text-gray-900 rounded-lg shadow-xl p-6 w-full max-w-sm">
@@ -158,15 +168,13 @@
         <script type="module">
         // Import Firebase modules
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        // Removed Auth imports as they caused the error and are not required for this app's logic
-        /*
+        // FIX: RE-ADDED AUTH MODULE
         import { 
             getAuth, 
             signInAnonymously, 
             signInWithCustomToken, 
             onAuthStateChanged 
         } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        */
         import { 
             getFirestore, 
             collection, 
@@ -177,7 +185,8 @@
             query, 
             onSnapshot, 
             serverTimestamp,
-            setLogLevel
+            setLogLevel,
+            setDoc // <-- NEW: Added setDoc for clear chat
         } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import { 
             getStorage, 
@@ -222,17 +231,19 @@
         };
 
         // --- Global Variables ---
-        let app, db, storage; // Removed 'auth'
-        // let currentUserId = null; // Removed 'currentUserId'
+        let app, db, storage, auth; // <-- RE-ADDED auth
+        let currentUserId = null; // <-- RE-ADDED currentUserId (for Firebase Auth)
         let currentChatUser = null; // 'user1' or 'user2'
         let currentChatUserName = null; // Display name
         let unsubscribeFromChat = null; // Function to stop listening to chat
         let unsubscribeFromUserDoc = null; // Function to stop listening to user's doc
         let chatCollectionRef;
-        let chatUserCollectionPath; // <-- NEW: Path for user-specific data
+        let chatUserCollectionPath; // Path for user-specific data
         let storageRefBase;
-        let allMessages = []; // <-- NEW: Store all messages globally
-        let myClearedAtTimestamp = null; // <-- NEW: Store user's clear timestamp
+        let allMessages = []; // Store all messages globally
+        let myClearedAtTimestamp = null; // Store user's clear timestamp
+        let isAuthReady = false; // <-- NEW: Flag to wait for auth
+        let appId; // <-- Make appId global for auth function
 
         // --- DOM Elements ---
         const loginScreen = document.getElementById('login-screen');
@@ -257,55 +268,84 @@
         async function initializeFirebase() {
             try {
                 // Get App ID
-                const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-chat-app';
+                appId = typeof __app_id !== 'undefined' ? __app_id : 'default-chat-app';
 
                 app = initializeApp(firebaseConfig);
-                // auth = getAuth(app); // Removed
+                auth = getAuth(app); // <-- RE-ADDED
                 db = getFirestore(app);
                 storage = getStorage(app);
                 setLogLevel('Debug'); // Enable Firebase logging
 
                 // Define collection paths based on App ID
                 const chatCollectionPath = `/artifacts/${appId}/public/data/chat-project`;
-                chatUserCollectionPath = `/artifacts/${appId}/public/data/chat-users`; // <-- NEW
+                // FIX: This path is PRIVATE and requires auth.
+                // We will use the *real* user's ID to store settings for 'user1' and 'user2'
+                // This will be set properly in `authenticateUser`
+                chatUserCollectionPath = `/artifacts/${appId}/users/`; 
                 chatCollectionRef = collection(db, chatCollectionPath);
                 storageRefBase = `/artifacts/${appId}/public/attachments`;
  
+                // <-- RE-ADDED: Start authentication -->
+                await authenticateUser();
+
             } catch (error) {
                 console.error("Firebase Initialization Error:", error);
                 loginError.textContent = "Error connecting to service.";
             }
         }
 
-        // --- Removed authenticateUser function ---
-        /*
+        // <-- RE-ADDED: AUTHENTICATION FUNCTION -->
         async function authenticateUser() {
             onAuthStateChanged(auth, (user) => {
                 if (user) {
                     console.log("Firebase user authenticated:", user.uid);
                     currentUserId = user.uid;
+                    // FIX: Set the final user-specific path *after* we have the user ID
+                    chatUserCollectionPath = `/artifacts/${appId}/users/${currentUserId}/chat-settings`;
+                    isAuthReady = true; // Auth is ready, app can proceed
                 } else {
                     console.log("No Firebase user. App may not function correctly.");
                     currentUserId = null;
+                    isAuthReady = false;
                 }
             });
 
             try {
+                // Use token from platform if available
                 if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
                     await signInWithCustomToken(auth, __initial_auth_token);
                 } else {
+                    // Fallback for local testing
                     await signInAnonymously(auth);
                 }
             } catch (error) {
+                // --- FIX: Improved Error Message ---
                 console.error("Firebase Auth Error:", error);
-                loginError.textContent = "Authentication failed.";
+                if (error.code === 'auth/configuration-not-found') {
+                    const errorMsg = 'Auth Error: Please enable "Identity Platform" in your Google Cloud project (for project law-dhartee) to fix this.';
+                    console.error(errorMsg);
+                    loginError.textContent = errorMsg;
+                } else {
+                    loginError.textContent = `Auth failed: ${error.message}`;
+                }
+                // --- End Fix ---
             }
         }
-        */
 
         // --- Login / Logout Logic ---
         function handleLogin(event) {
             event.preventDefault();
+            
+            // Wait for auth to be ready
+            if (!isAuthReady) {
+                if (!loginError.textContent.startsWith('Auth Error:')) {
+                     loginError.textContent = 'Connecting to service...';
+                }
+                // Try again in a moment
+                setTimeout(() => handleLogin(event), 500);
+                return;
+            }
+
             const pin = pinInput.value;
             const user = USER_PINS[pin];
 
@@ -323,15 +363,15 @@
         function handleLogout() {
             currentChatUser = null;
             currentChatUserName = null;
-            allMessages = []; // <-- NEW: Clear local message cache
-            myClearedAtTimestamp = null; // <-- NEW: Clear timestamp
+            allMessages = []; // Clear local message cache
+            myClearedAtTimestamp = null; // Clear timestamp
 
             // Stop listening to chat updates
             if (unsubscribeFromChat) {
                 unsubscribeFromChat();
                 unsubscribeFromChat = null;
             }
-            // <-- NEW: Stop listening to user doc -->
+            // Stop listening to user doc
             if (unsubscribeFromUserDoc) {
                 unsubscribeFromUserDoc();
                 unsubscribeFromUserDoc = null;
@@ -359,7 +399,7 @@
 
             // Start listening for messages
             loadChatMessages();
-            listenToUserDoc(); // <-- NEW: Listen for "clear chat" updates
+            listenToUserDoc(); // Listen for "clear chat" updates
 
             // Add listeners for immediate logout
             window.addEventListener('beforeunload', handleLogout);
@@ -368,6 +408,7 @@
 
         // --- Chat & Message Logic ---
         function loadChatMessages() {
+            // This collection is public, so it's fine.
             const q = query(chatCollectionRef);
             
             unsubscribeFromChat = onSnapshot(q, (querySnapshot) => {
@@ -383,28 +424,36 @@
                     return tsA - tsB;
                 });
 
-                allMessages = messages; // <-- NEW: Store in global cache
-                filterAndDisplayMessages(); // <-- CHANGED: Call filter function
+                allMessages = messages; // Store in global cache
+                filterAndDisplayMessages(); // Call filter function
             }, (error) => {
                 console.error("Error loading chat messages: ", error);
             });
         }
 
-        // <-- NEW: Function to listen for user-specific data (like clearedAt) -->
+        // Listen for user-specific data (like clearedAt)
         function listenToUserDoc() {
-            if (unsubscribeFromUserDoc) unsubscribeFromUserDoc(); // Detach old listener if any
+            if (unsubscribeFromUserDoc) unsubscribeFromUserDoc(); // Detach old listener
 
+            // FIX: We now listen to the *private* path.
+            // We use currentChatUser ('user1' or 'user2') as the *document ID*
+            // inside the authenticated user's private 'chat-settings' collection.
             const userDocRef = doc(db, chatUserCollectionPath, currentChatUser);
+            
+            console.log(`Listening to user doc at: ${chatUserCollectionPath}/${currentChatUser}`);
+
             unsubscribeFromUserDoc = onSnapshot(userDocRef, (doc) => {
                 myClearedAtTimestamp = doc.exists() ? doc.data().clearedAt : null;
                 console.log(`'clearedAt' timestamp for ${currentChatUser}:`, myClearedAtTimestamp);
                 filterAndDisplayMessages(); // Re-filter and display messages
             }, (error) => {
+                // This is the error you were seeing. It should be fixed
+                // now that auth is back and rules are correct.
                 console.error(`Error listening to user doc ${currentChatUser}:`, error);
             });
         }
 
-        // <-- NEW: Function to filter messages based on 'clearedAt' timestamp -->
+        // Filter messages based on 'clearedAt' timestamp
         function filterAndDisplayMessages() {
             let messagesToDisplay = [];
             if (!myClearedAtTimestamp) {
@@ -444,35 +493,26 @@
                 // Add content (text or file link)
                 if (msg.type === 'file' && msg.contentUrl) {
                     
-                    // FIX 2: Check if it's an image
                     if (msg.mimeType && msg.mimeType.startsWith('image/')) {
                         // It's an image, create an <img> tag
                         const img = document.createElement('img');
                         img.src = msg.contentUrl;
                         img.alt = msg.fileName || 'Uploaded Image';
-                        // Make image clickable to open in new tab
                         img.className = 'w-full rounded-lg mt-1 cursor-pointer'; 
                         img.onclick = () => window.open(msg.contentUrl, '_blank');
                         
-                        // --- NEW: WHATSAPP-STYLE TIMESTAMP ---
-                        // Make bubble relative to position timestamp
                         messageBubble.classList.add('relative');
                         messageBubble.appendChild(img);
                         
-                        // Make bubble padding fit image
                         messageBubble.classList.remove('p-3');
                         messageBubble.classList.add('p-1'); 
 
-                        // Add timestamp *inside* the bubble, on top of the image
                         if (msg.timestamp) {
                             const timestamp = document.createElement('div');
-                            // Style to be absolute, in bottom-right, with semi-transparent background
                             timestamp.className = `absolute bottom-2 right-2 bg-black bg-opacity-50 text-white text-xs px-1.5 py-0.5 rounded-lg`;
                             timestamp.textContent = new Date(msg.timestamp.toMillis()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                             messageBubble.appendChild(timestamp);
                         }
-                        // --- END NEW ---
-
                     } else {
                         // It's a different file type, show a link
                         const fileLink = document.createElement('a');
@@ -486,13 +526,13 @@
                         messageBubble.appendChild(fileLink);
                     }
 
-                } else if (msg.content) { // Check if msg.content is not null/undefined
+                } else if (msg.content) { 
                     const messageText = document.createElement('p');
                     messageText.textContent = msg.content;
                     messageBubble.appendChild(messageText);
                 }
                 
-                // Add timestamp (ONLY IF IT'S NOT AN IMAGE, as images now handle their own timestamp)
+                // Add timestamp (ONLY IF IT'S NOT AN IMAGE)
                 if (msg.timestamp && !(msg.type === 'file' && msg.mimeType && msg.mimeType.startsWith('image/'))) {
                      const timestamp = document.createElement('div');
                      timestamp.className = `text-xs mt-1 ${isSender ? 'text-green-700' : 'text-gray-500'} ${isSender ? 'text-right' : 'text-left'}`;
@@ -515,26 +555,26 @@
 
             if (file) {
                 await uploadFile(file);
-                // FIX 1: Do not send text if a file is being sent
-            } else if (text) { // <-- Changed to 'else if'
+            } else if (text) { 
                 await sendMessage(text, 'text');
             }
 
-            messageForm.reset(); // Clears both text and file input
-            messageInput.disabled = false; // Re-enable text input
+            messageForm.reset(); 
+            messageInput.disabled = false;
         }
 
-        async function sendMessage(content, type, fileName = null, contentUrl = null, mimeType = null) { // Added mimeType
+        async function sendMessage(content, type, fileName = null, contentUrl = null, mimeType = null) {
+            // This collection is public and should be writable by any authenticated user.
             if (!currentChatUser) return;
             try {
                 await addDoc(chatCollectionRef, {
                     sender: currentChatUser,
                     displayName: currentChatUserName,
-                    type: type, // 'text' or 'file'
+                    type: type,
                     content: (type === 'text' ? content : null),
                     contentUrl: (type === 'file' ? contentUrl : null),
                     fileName: fileName,
-                    mimeType: mimeType, // FIX 2: Save the file's MIME type
+                    mimeType: mimeType, 
                     timestamp: serverTimestamp()
                 });
             } catch (error) {
@@ -547,29 +587,24 @@
 
             uploadIndicator.classList.remove('hidden');
             const uniqueFileName = `${new Date().getTime()}_${file.name}`;
+            // This path is public and should be writable
             const fileStorageRef = ref(storage, `${storageRefBase}/${uniqueFileName}`);
             
-            // FIX 2: Add metadata (like MIME type) to the upload
             const metadata = {
               contentType: file.type || 'application/octet-stream'
             };
 
-            const uploadTask = uploadBytesResumable(fileStorageRef, file, metadata); // Pass metadata
+            const uploadTask = uploadBytesResumable(fileStorageRef, file, metadata);
 
             uploadTask.on('state_changed', 
-                (snapshot) => {
-                    // Can add progress bar here if needed
-                }, 
+                (snapshot) => { /* Progress */ }, 
                 (error) => {
                     console.error("Upload failed: ", error);
                     uploadIndicator.classList.add('hidden');
-                    // Use custom modal/alert here
-                    loginError.textContent = "File upload failed."; // Re-use login error display
+                    loginError.textContent = "File upload failed.";
                 }, 
                 async () => {
-                    // Handle successful uploads on complete
                     const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-                    // FIX 2: Pass the file type when sending the message
                     await sendMessage(null, 'file', file.name, downloadURL, file.type || 'application/octet-stream');
                     uploadIndicator.classList.add('hidden');
                 }
@@ -577,12 +612,11 @@
         }
 
         // --- Clear Chat Logic ---
-        // <-- RENAMED and RE-WRITTEN: This function now only clears for the current user -->
         async function clearMyChatMessages() {
             console.log(`Setting 'clearedAt' timestamp for ${currentChatUser}...`);
             try {
-                // This does NOT delete messages. It just sets a timestamp in the user's
-                // private document, so the app knows to hide old messages.
+                // FIX: This now writes to the *private* path, which is allowed
+                // because the user is authenticated (currentUserId exists).
                 const userDocRef = doc(db, chatUserCollectionPath, currentChatUser);
                 await setDoc(userDocRef, { clearedAt: serverTimestamp() }, { merge: true });
                 console.log(`'clearedAt' timestamp set for ${currentChatUser}.`);
@@ -614,9 +648,8 @@
 
         clearChatButton.addEventListener('click', () => {
             showConfirmationModal(
-                // <-- CHANGED: Updated modal text to be accurate
                 "Are you sure you want to clear your chat history? This will only hide messages for you. The other user will still see them.",
-                clearMyChatMessages // <-- CHANGED: Call the new function
+                clearMyChatMessages
             );
         });
 
@@ -625,14 +658,12 @@
         logoutButton.addEventListener('click', handleLogout);
         messageForm.addEventListener('submit', handleSendMessage);
         
-        // Handle file selection display
         fileInput.addEventListener('change', () => {
              if (fileInput.files.length > 0) {
                  messageInput.value = `File: ${fileInput.files[0].name}`;
                  messageInput.disabled = true;
              }
         });
-        // Clear file input if user clicks on text input
         messageInput.addEventListener('click', () => {
             if (fileInput.files.length > 0) {
                 fileInput.value = '';
