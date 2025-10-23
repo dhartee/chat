@@ -325,16 +325,26 @@
                     await signInAnonymously(auth);
                 }
             } catch (error) {
-                // --- FIX: Improved Error Message ---
                 console.error("Firebase Auth Error:", error);
-                if (error.code === 'auth/configuration-not-found') {
+                
+                // --- FIX: Fallback for token mismatch ---
+                if (error.code === 'auth/custom-token-mismatch') {
+                    console.warn("Custom token mismatch. This is expected when using your own Firebase project in this environment. Falling back to Anonymous Sign-In.");
+                    try {
+                        // Attempt to sign in anonymously as a fallback
+                        await signInAnonymously(auth);
+                    } catch (anonError) {
+                        console.error("Anonymous Sign-In failed after token mismatch:", anonError);
+                        loginError.textContent = `Auth failed: ${anonError.message}`;
+                    }
+                // --- End Fix ---
+                } else if (error.code === 'auth/configuration-not-found') {
                     const errorMsg = 'Auth Error: Please enable "Identity Platform" in your Google Cloud project (for project law-dhartee) to fix this.';
                     console.error(errorMsg);
                     loginError.textContent = errorMsg;
                 } else {
                     loginError.textContent = `Auth failed: ${error.message}`;
                 }
-                // --- End Fix ---
             }
         }
 
@@ -685,5 +695,3 @@
     </script>
 </body>
 </html>
-
-
