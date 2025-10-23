@@ -1,5 +1,6 @@
 <!DOCTYPE html>
-<html lang="en">
+<!-- FIX: Added h-full and overflow-x-hidden to the root html tag -->
+<html lang="en" class="h-full overflow-x-hidden">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -44,15 +45,20 @@
         }
     </style>
 </head>
-<!-- BODY IS NOW A FLEX CONTAINER TO FIX MOBILE LAYOUT -->
-<body class="bg-gray-100 text-gray-900 h-dvh flex flex-col">
+<!-- 
+  FIX: 
+  - Kept h-dvh (dynamic viewport height) for keyboard.
+  - Added w-full to ensure body doesn't overflow the html tag.
+-->
+<body class="bg-gray-100 text-gray-900 h-dvh flex flex-col w-full">
 
     <!-- 
       Login Screen
-      FIX: Changed w-screen to w-full. Removed p-4 for better embedding.
+      FIX: Removed justify-center to prevent off-centering when embedded.
+      Added p-4 for some spacing on mobile.
     -->
-    <div id="login-screen" class="flex items-center justify-center h-full w-full">
-        <div class="bg-white text-gray-900 p-8 rounded-2xl shadow-2xl w-full max-w-sm">
+    <div id="login-screen" class="flex items-center h-full w-full p-4">
+        <div class="bg-white text-gray-900 p-8 rounded-2xl shadow-2xl w-full max-w-sm mx-auto">
             <h1 class="text-3xl font-bold text-center mb-6">Chat Login</h1>
             <p class="text-center text-gray-600 mb-4">Enter your 6-digit PIN to continue.</p>
             
@@ -679,3 +685,5 @@
     </script>
 </body>
 </html>
+
+
