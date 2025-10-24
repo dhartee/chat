@@ -198,8 +198,9 @@
 
 
     <!-- Firebase App (auto-init) -->
-    <script src="config.js"></script>
+    
     <script type="module">
+        import { firebaseConfig } from './config.js';
         // Import Firebase modules
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { 
@@ -305,7 +306,8 @@
             try {
 
                 // Change this line
-                const app = initializeApp(window.firebaseConfig);
+              
+                const app = initializeApp(firebaseConfig);
                 db = getFirestore(app);
                 auth = getAuth(app);
                 storage = getStorage(app);
@@ -901,5 +903,6 @@
     </script>
 </body>
 </html>
+
 
 
