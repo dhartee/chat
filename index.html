@@ -198,6 +198,7 @@
 
 
     <!-- Firebase App (auto-init) -->
+    <script src="config.js"></script>
     <script type="module">
         // Import Firebase modules
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
@@ -302,24 +303,6 @@
 
         function initializeFirebase() {
             try {
-                // IMPORTANT: Manually paste your Firebase config here
-                // This app will not work with the default placeholders.
-                const firebaseConfig = {
-                    apiKey: "AIzaSyBayS0D9xJZNstCf1D2Wk3aYt2Xll4RoY4",
-                    authDomain: "law-dhartee.firebaseapp.com",
-                    projectId: "law-dhartee",
-                    storageBucket: "law-dhartee.firebasestorage.app",
-                    messagingSenderId: "667742651569",
-                    appId: "1:667742651569:web:72eea345d97974acc60e90",
-                    measurementId: "G-EC6BD85GSX"
-                };
-
-                // Check if config is still a placeholder
-                if (firebaseConfig.apiKey.includes("AIzaSyB")) {
-                    console.log("Using provided Firebase config.");
-                } else if (firebaseConfig.apiKey.includes("PASTE_YOUR")) {
-                     throw new Error("Firebase config not found or is still a placeholder.");
-                }
 
                 const app = initializeApp(firebaseConfig);
                 db = getFirestore(app);
@@ -917,3 +900,4 @@
     </script>
 </body>
 </html>
+
