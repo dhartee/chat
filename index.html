@@ -304,7 +304,8 @@
         function initializeFirebase() {
             try {
 
-                const app = initializeApp(firebaseConfig);
+                // Change this line
+                const app = initializeApp(window.firebaseConfig);
                 db = getFirestore(app);
                 auth = getAuth(app);
                 storage = getStorage(app);
@@ -900,4 +901,5 @@
     </script>
 </body>
 </html>
+
 
